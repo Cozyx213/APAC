@@ -1,0 +1,81 @@
+# --- General ---
+.env               
+.DS_Store          
+*.log              
+npm-debug.log*
+yarn-debug.log* 
+yarn-error.log* 
+
+# --- Python / Flask Backend ---
+# Virtual environment
+# (Common names for virtual environment directories)
+venv/
+.venv/
+env/
+.env/
+# If you use a different name, add it here (e.g., myenv/)
+
+# Compiled Python files
+__pycache__/
+*.pyc
+
+# Installer artifacts
+*.egg-info/
+dist/
+build/
+
+# Test and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Database files (If you were using SQLite locally)
+# *.db
+# *.sqlite3
+
+# --- Node / React Native Frontend ---
+# Dependencies
+node_modules/
+
+# Build output directories
+# For React Native, these are platform-specific build outputs
+android/build/
+android/app/build/
+ios/build/
+
+# Bundler cache
+.expo/           # Expo specific cache
+.parcel-cache/   # Parcel bundler cache (if used)
+
+# Other common Node.js/React Native ignores
+coverage/
+build/
+dist/
+temp/
+*.tgz          
+.cache/
+.yarn/         
+.pnp/           
+
+# React Native specific ignores
+# These are often generated and shouldn't be tracked
+android/.gradle/
+ios/.xcode.build/
+
+# iOS Pods (if using CocoaPods)
+ios/Pods/
+
+# Android specific
+android/.idea/ # Android Studio config (often IDE-specific)
+android/local.properties # Local configuration, includes SDK path
+
+# --- Editor/IDE specific files ---
+
+# --- Git Submodule (if applicable) ---
+# The .gitmodules file itself SHOULD NOT be ignored.
+# Git manages the content within the submodule's directory based on the submodule's repo.
+# You might occasionally ignore specific temporary files *within* a submodule if its own .gitignore doesn't cover them,
+# but usually, that should be handled by the submodule's own .gitignore.
+
+# If you need to ignore the entire submodule directory for some reason (rare), use the folder name:
+# app-frontend/ # Uncomment this line ONLY if you absolutely need to ignore the submodule directory itself, which is unusual.
