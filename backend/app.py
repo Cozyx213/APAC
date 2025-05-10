@@ -15,10 +15,13 @@ if not API_KEY:
     raise ValueError("GOOGLE_API_KEY not found in environment variables. Please set it.")
 genai.configure(api_key=API_KEY)
 
+
+
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app) 
 
+# Celery configuration
 
 def load_image_from_url(image_url):
     """Loads an image from a URL and returns it as a PIL Image object."""
@@ -106,12 +109,13 @@ def generate():
                         IGNORE_WHEN_COPYING_START
                         Use code with caution. Python
                         IGNORE_WHEN_COPYING_END
-
+                
                         Please provide only the JSON object in your response.
                         """
         # ...existing code for text_prompt...
 
         result = generate_text_from_image(image, text_prompt)
+        
         
         
         return jsonify(result)
