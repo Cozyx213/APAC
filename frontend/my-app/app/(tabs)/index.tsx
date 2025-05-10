@@ -1,6 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Button } from 'react-native';
-import { useRouter } from 'expo-router'; // Import useRouter from expo-router
+import { View, Text, StyleSheet} from 'react-native';
 
 export default function IndexScreen() {
   
