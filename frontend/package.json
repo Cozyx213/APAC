@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "expo-camera": "~16.1.6",
+    "react-native-camera": "^4.2.1"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.3",
+    "@types/react": "~19.0.10"
+  }
+}
