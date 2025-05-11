@@ -6,7 +6,7 @@ export default function IndexScreen() {
     const [text, setText] = React.useState("");
 
   
-    const host = "http://192.168.1.12:5000";
+    const host =  "https://apac-app-562528254517.asia-southeast1.run.app";
     const getNews = async () => {
         try {
             const response = await fetch(`${host}/`);

@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions, Camera } from "expo-camera";
 import { useRef, useState } from "react";
-
+import { useIsFocused } from "@react-navigation/native";
 import {
     Button,
     StyleSheet,
@@ -10,6 +10,7 @@ import {
     TextInput,
     ActivityIndicator,
     ScrollView,
+  
     ImageBackground,
 } from "react-native";
 
@@ -29,6 +30,7 @@ export default function App() {
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<any>(null);
     const [photoUri, setPhotoUri] = useState<string | null>(null);
+    const isFocused = useIsFocused();
     if (!permission) {
         // Camera permissions are still loading.
         return <View />;
@@ -149,10 +151,12 @@ export default function App() {
     // simplified, minimalistic UI
     return (
         <View style={styles.container}>
-            {!result && (
+            {!result && isFocused&&(
                 <>
-                    <CameraView style={styles.camera} ref={cameraRef}>
-                        <View style={styles.topBar}>
+                    <CameraView style={styles.camera} ref={cameraRef}/>
+                       
+                   
+                     <View style={styles.topBar}>
                             <TextInput
                                 style={styles.input}
                                 placeholder="What plant is this?"
@@ -169,7 +173,6 @@ export default function App() {
                                 <Text style={styles.buttonText}>Scan</Text>
                             </TouchableOpacity>
                         </View>
-                    </CameraView>
                 </>
             )}
             {loading && (
