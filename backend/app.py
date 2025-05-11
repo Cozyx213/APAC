@@ -83,41 +83,33 @@ def generate_text_from_image(image_obj, text_prompt):
 def generate():
     """API endpoint to generate text from an image URL and a text prompt."""
     if "image" not in request.files or "plant" not in request.form:
-        print("Request files:", request.files)
-        print("Request form:", request.form)
         return jsonify({"error": "Invalid request. 'image' and 'plant' are required."}), 400
 
     image_file = request.files["image"]
     plant_name = request.form["plant"]
     print("Received plant:", plant_name)
     try:
-
         image = Image.open(image_file.stream)
-
         text_prompt = f"""The plant is {plant_name}.
                         (examine carefully) first describe the image and then tell me what its disease is, its risk level (either low, medium or high), and the actions a farmer should take, using the following JSON format:
-                        {{
-                        "risk_level": "low/medium/high",
-                        "disease": "what exact disease",
-                        "farmer_actions": [
-                            "Action 1",
-                            "Action 2",
-                            "Action 3"
-                        ]
-                        }}
+                        Example Output:
+{{
+  "risk_level": "low/medium/high",
+  "disease": "what exact disease",
+  "farmer_actions": [
+    "Action 1",
+    "Action 2",
+    "Action 3"
+  ]
+}}
 
                         IGNORE_WHEN_COPYING_START
                         Use code with caution. Python
                         IGNORE_WHEN_COPYING_END
-                
-                        Please provide only the JSON object in your response.
+                        "Respond only with the JSON object" and "Do not include any additional text or formatting like '''json ... '''".
                         """
         # ...existing code for text_prompt...
-
         result = generate_text_from_image(image, text_prompt)
-        
-        
-        
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": f"An error occurred while processing the image: {e}"}), 500

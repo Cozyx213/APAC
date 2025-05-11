@@ -73,7 +73,7 @@ export default function App() {
                 console.log("FormData parts", formData);
 
                 // Use appropriate host for emulator vs real device
-                const host = "http://192.168.1.6:5000";
+                const host = "http://192.168.1.12:5000";
                 // Send request using fetch (better file upload support in React Native)
                 const response = await fetch(`${host}/generate`, {
                     method: "POST",
@@ -81,6 +81,7 @@ export default function App() {
                 });
                 const data = await response.json();
                 let raw = data.response;
+                console.log("Raw response:", raw);
                 // remove the ```json prefix and any ``` suffix
                 raw = raw
                     .replace(/^```json\s*/, "")
@@ -105,16 +106,17 @@ export default function App() {
         <View style={styles.container}>
             {!result && (
                 <>
-                    <View style={styles.topBar}>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="What plant is this?"
-                            placeholderTextColor="#888"
-                            onChangeText={setText}
-                            value={text}
-                        />
-                    </View>
+                    
                     <CameraView style={styles.camera} ref={cameraRef}>
+                        <View style={styles.topBar}>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="What plant is this?"
+                                placeholderTextColor="white"
+                                onChangeText={setText}
+                                value={text}
+                            />
+                        </View>
                         <View style={styles.bottomBar}>
                             <TouchableOpacity
                                 style={styles.button}
@@ -180,9 +182,11 @@ const styles = StyleSheet.create({
     topBar: {
         position: "absolute",
         top: 0,
+        marginTop: 50,
         width: "100%",
         padding: 10,
         backgroundColor: "rgba(0,0,0,0.5)",
+        borderRadius: 20,
         zIndex: 2,
     },
     message: {
@@ -227,7 +231,7 @@ const styles = StyleSheet.create({
         color: "#fff",
         padding: 12,
         borderRadius: 8,
-        marginBottom: 12,
+      
         fontSize: 16,
     },
     scanButton: {
