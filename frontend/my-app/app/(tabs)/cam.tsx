@@ -264,8 +264,8 @@ const styles = StyleSheet.create({
         position: "absolute",
         bottom: 0,
         width: "100%",
-        height: "70%", // Adjust the height as needed
-        backgroundColor: "rgba(0,128,0,0.8)", // Green with some transparency
+        height: "60%", // Adjust the height as needed
+        backgroundColor: "rgba(0,128,0,0.75)", // Green with some transparency
         borderTopLeftRadius: 12,
         borderTopRightRadius: 12,
         overflow: "hidden",

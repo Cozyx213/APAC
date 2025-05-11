@@ -21,7 +21,6 @@ genai.configure(api_key=API_KEY)
 app = Flask(__name__)
 CORS(app) 
 
-# Celery configuration
 
 def load_image_from_url(image_url):
     """Loads an image from a URL and returns it as a PIL Image object."""
@@ -93,15 +92,15 @@ def generate():
         text_prompt = f"""The plant is {plant_name}.
                         (examine carefully) first describe the image and then tell me what its disease is, its risk level (either low, medium or high), and the actions a farmer should take, using the following JSON format:
                         Example Output:
-{{
-  "risk_level": "low/medium/high",
-  "disease": "what exact disease",
-  "farmer_actions": [
-    "Action 1",
-    "Action 2",
-    "Action 3"
-  ]
-}}
+                        {{
+                        "risk_level": "low/medium/high",
+                        "disease": "what exact disease",
+                        "farmer_actions": [
+                            "Action 1",
+                            "Action 2",
+                            "Action 3"
+                        ]
+                        }}
 
                         IGNORE_WHEN_COPYING_START
                         Use code with caution. Python
@@ -110,9 +109,11 @@ def generate():
                         """
         # ...existing code for text_prompt...
         result = generate_text_from_image(image, text_prompt)
+        
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": f"An error occurred while processing the image: {e}"}), 500
+
 
 @app.route("/")
 def home():

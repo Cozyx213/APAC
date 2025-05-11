@@ -31,7 +31,15 @@ export default function Layout() {
           ),
         }}
       />
-     
+     <Tabs.Screen
+        name="insights"
+        options={{
+          tabBarLabel: 'Insights',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="insights" color={color} size={size} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
