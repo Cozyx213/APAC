@@ -114,7 +114,7 @@ def generate():
     except Exception as e:
         return jsonify({"error": f"An error occurred while processing the image: {e}"}), 500
 
-
+#
 @app.route("/")
 def home():
     """Home route to test the API."""

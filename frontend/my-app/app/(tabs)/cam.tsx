@@ -73,27 +73,72 @@ export default function App() {
                 console.log("FormData parts", formData);
 
                 // Use appropriate host for emulator vs real device
-                const host = "http://192.168.1.12:5000";
+                const host =
+                    "https://apac-app-562528254517.asia-southeast1.run.app";
+                //const host = "http://192.168.1.12:5000";
                 // Send request using fetch (better file upload support in React Native)
-                const response = await fetch(`${host}/generate`, {
-                    method: "POST",
-                    body: formData,
-                });
-                const data = await response.json();
-                let raw = data.response;
-                console.log("Raw response:", raw);
-                // remove the ```json prefix and any ``` suffix
-                raw = raw
-                    .replace(/^```json\s*/, "")
-                    .replace(/```$/g, "")
-                    .trim();
-                // now parse it
-                const payload = JSON.parse(raw);
-                setResult(payload);
-                setDisease(payload.disease);
-                setRiskLevel(payload.risk_level);
-                setFarmerActions(payload.farmer_actions);
-                console.log("Response:", payload);
+                
+                try {
+                    const response = await fetch(`${host}/generate`, {
+                        method: "POST",
+                        body: formData,
+                    });
+
+                    // Check if the response status is OK (status code 200-299)
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error(
+                            `HTTP error! Status: ${response.status}, Body: ${errorText}`
+                        );
+                        throw new Error(
+                            `Server returned an error: ${response.status}`
+                        );
+                    }
+
+                    // Check if the response is JSON
+                    const contentType = response.headers.get("content-type");
+                    if (
+                        !contentType ||
+                        !contentType.includes("application/json")
+                    ) {
+                        const errorText = await response.text();
+                        console.error("Non-JSON response received:", errorText);
+                        throw new Error(
+                            "Expected JSON response but received something else."
+                        );
+                    }
+
+                    // Parse the JSON response
+                    const data = await response.json();
+                    if (!data.response) {
+                        console.error(
+                            "Response missing 'response' field:",
+                            data
+                        );
+                        throw new Error("Invalid response format from server.");
+                    }
+
+                    let raw = data.response;
+                    console.log("Raw response:", raw);
+
+                    // Remove the ```json prefix and any ``` suffix
+                    raw = raw
+                        .replace(/^```json\s*/, "")
+                        .replace(/```$/g, "")
+                        .trim();
+
+                    // Parse the cleaned JSON
+                    const payload = JSON.parse(raw);
+                    setResult(payload);
+                    setDisease(payload.disease);
+                    setRiskLevel(payload.risk_level);
+                    setFarmerActions(payload.farmer_actions);
+                    console.log("Response:", payload);
+                } catch (error) {
+                    // Log the error and handle it gracefully
+                    console.error("Error occurred:", error);
+                    alert(`An error occurred: ${error}`);
+                }
             } catch (error) {
                 console.error("Error:", error);
             }
@@ -106,7 +151,6 @@ export default function App() {
         <View style={styles.container}>
             {!result && (
                 <>
-                    
                     <CameraView style={styles.camera} ref={cameraRef}>
                         <View style={styles.topBar}>
                             <TextInput
@@ -134,42 +178,46 @@ export default function App() {
                     <Text style={styles.loadingText}>Processing...</Text>
                 </View>
             )}
-            {result &&  photoUri&&(
-               <ImageBackground source={{ uri: photoUri }} style={styles.background}>
-                <View style={styles.resultContainer}>
-                    <ScrollView contentContainerStyle={{ padding: 10 }}>
-                        <Text style={styles.diseaseText}>
-                            Disease: {disease}
-                        </Text>
-                        <Text
-                            style={[
-                                styles.riskText,
-                                {
-                                    color:
-                                        risk.toLowerCase() === "high"
-                                            ? "#ff3333"
-                                            : risk.toLowerCase() === "medium"
-                                            ? "#ffaa00"
-                                            : "#33ff33",
-                                },
-                            ]}
-                        >
-                            Risk: {risk}
-                        </Text>
-
-                        {farmer_actions.map((step, i) => (
-                            <Text key={i} style={styles.farmerActionText}>
-                                • {step}
+            {result && photoUri && (
+                <ImageBackground
+                    source={{ uri: photoUri }}
+                    style={styles.background}
+                >
+                    <View style={styles.resultContainer}>
+                        <ScrollView contentContainerStyle={{ padding: 10 }}>
+                            <Text style={styles.diseaseText}>
+                                Disease: {disease}
                             </Text>
-                        ))}
-                    </ScrollView>
-                    <TouchableOpacity
-                        style={styles.scanAgainButton}
-                        onPress={handleScanAgain}
-                    >
-                        <Text style={styles.scanAgainText}>Scan Again</Text>
-                    </TouchableOpacity>
-                </View>
+                            <Text
+                                style={[
+                                    styles.riskText,
+                                    {
+                                        color:
+                                            risk.toLowerCase() === "high"
+                                                ? "#ff3333"
+                                                : risk.toLowerCase() ===
+                                                  "medium"
+                                                ? "#ffaa00"
+                                                : "#33ff33",
+                                    },
+                                ]}
+                            >
+                                Risk: {risk}
+                            </Text>
+
+                            {farmer_actions.map((step, i) => (
+                                <Text key={i} style={styles.farmerActionText}>
+                                    • {step}
+                                </Text>
+                            ))}
+                        </ScrollView>
+                        <TouchableOpacity
+                            style={styles.scanAgainButton}
+                            onPress={handleScanAgain}
+                        >
+                            <Text style={styles.scanAgainText}>Scan Again</Text>
+                        </TouchableOpacity>
+                    </View>
                 </ImageBackground>
             )}
         </View>
@@ -231,7 +279,7 @@ const styles = StyleSheet.create({
         color: "#fff",
         padding: 12,
         borderRadius: 8,
-      
+
         fontSize: 16,
     },
     scanButton: {
