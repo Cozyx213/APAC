@@ -4,13 +4,23 @@ import { MaterialIcons } from '@expo/vector-icons';
 export default function Layout() {
   return (
     <Tabs
+      initialRouteName='index'
       screenOptions={{
-        tabBarActiveTintColor: 'green',
-        tabBarInactiveTintColor: 'gray',
-        tabBarStyle: { backgroundColor: '#d4edda' },
+        tabBarActiveTintColor: '#C5E689n',
+        tabBarInactiveTintColor: 'white',
+        tabBarStyle: { backgroundColor: '#65B04A' },
          headerShown: false, 
       }}
     >
+       <Tabs.Screen
+        name="cam"
+        options={{
+          tabBarLabel: 'Camera',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="camera-alt" color={color} size={size} />
+          ),
+        }}
+      />
       <Tabs.Screen
         name="index"
         options={{
@@ -22,15 +32,7 @@ export default function Layout() {
         // Hide the tab bar for the home screen
         }}
       />
-      <Tabs.Screen
-        name="cam"
-        options={{
-          tabBarLabel: 'Camera',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="camera-alt" color={color} size={size} />
-          ),
-        }}
-      />
+     
      <Tabs.Screen
         name="insights"
         options={{

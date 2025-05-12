@@ -10,7 +10,6 @@ import {
     TextInput,
     ActivityIndicator,
     ScrollView,
-  
     ImageBackground,
 } from "react-native";
 
@@ -54,6 +53,7 @@ export default function App() {
         setDisease("");
         setFarmerActions([]);
         setText("");
+        setPhotoUri(null);
     };
 
     const handleScan = async () => {
@@ -75,11 +75,10 @@ export default function App() {
                 console.log("FormData parts", formData);
 
                 // Use appropriate host for emulator vs real device
-                const host =
-                    "https://apac-app-562528254517.asia-southeast1.run.app";
-                //const host = "http://192.168.1.12:5000";
+                //const host = "https://apac-app-562528254517.asia-southeast1.run.app";
+                const host = "http://192.168.1.12:5000";
                 // Send request using fetch (better file upload support in React Native)
-                
+
                 try {
                     const response = await fetch(`${host}/generate`, {
                         method: "POST",
@@ -151,35 +150,39 @@ export default function App() {
     // simplified, minimalistic UI
     return (
         <View style={styles.container}>
-            {!result && isFocused&&(
+            {!result && isFocused && !photoUri && (
                 <>
-                    <CameraView style={styles.camera} ref={cameraRef}/>
-                       
-                   
-                     <View style={styles.topBar}>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="What plant is this?"
-                                placeholderTextColor="white"
-                                onChangeText={setText}
-                                value={text}
-                            />
-                        </View>
-                        <View style={styles.bottomBar}>
-                            <TouchableOpacity
-                                style={styles.button}
-                                onPress={handleScan}
-                            >
-                                <Text style={styles.buttonText}>Scan</Text>
-                            </TouchableOpacity>
-                        </View>
+                    <CameraView style={styles.camera} ref={cameraRef} />
+
+                    <View style={styles.topBar}>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="What plant is this?"
+                            placeholderTextColor="white"
+                            onChangeText={setText}
+                            value={text}
+                        />
+                    </View>
+                    <View style={styles.bottomBar}>
+                        <TouchableOpacity
+                            style={styles.button}
+                            onPress={handleScan}
+                        >
+                            <Text style={styles.buttonText}>Scan</Text>
+                        </TouchableOpacity>
+                    </View>
                 </>
             )}
-            {loading && (
-                <View style={styles.loadingOverlay}>
-                    <ActivityIndicator size="large" color="#fff" />
-                    <Text style={styles.loadingText}>Processing...</Text>
-                </View>
+            {loading && photoUri && (
+                <ImageBackground
+                    source={{ uri: photoUri }}
+                    style={styles.background}
+                >
+                    <View style={styles.loadingOverlay}>
+                        <ActivityIndicator size="large" color="#fff" />
+                        <Text style={styles.loadingText}>Processing...</Text>
+                    </View>
+                </ImageBackground>
             )}
             {result && photoUri && (
                 <ImageBackground
