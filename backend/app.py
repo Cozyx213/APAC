@@ -8,7 +8,7 @@ import json
 import psycopg2
 from dotenv import load_dotenv
 from flask_cors import CORS
-from news import da_news_scraper, generate_insights_from_text
+from news import da_news_scraper, generate_insights_from_text , rappler_news_scraper
 # Load environment variables
 load_dotenv()
 API_KEY = os.getenv("GOOGLE_API_KEY")
@@ -226,6 +226,8 @@ gcloud scheduler jobs create http daily-flask-task \
 def daily_news():
     print("Running daily news task...")
     da_news = da_news_scraper()
+    #[description, url, title, image_url]
+    rappler_news = rappler_news_scraper()
     print(da_news[1])
     conn = get_db_connection()
     if conn is None:
@@ -233,11 +235,22 @@ def daily_news():
 
     try:
         with conn.cursor() as cursor:
-            #cursor.execute(""" ALTER TABLE news ADD COLUMN image_url TEXT ;""")  
-            cursor.execute(
-                "INSERT INTO news (description,url,title, image_url) VALUES (%s, %s, %s, %s)",
-                (da_news[0]["response"],da_news[1],da_news[2],da_news[3] )
-            )
+            #cursor.execute(""" ALTER TABLE news ADD COLUMN image_url TEXT ;""")
+            #cursor.execute("DELETE FROM news;")
+            cursor.execute("""
+                                INSERT INTO news (description, url, title, image_url)
+                                VALUES (%s, %s, %s, %s)
+                                ON CONFLICT (title) DO NOTHING
+                                """,
+            (da_news[0]["response"], da_news[1], da_news[2].strip(), da_news[3])
+        )
+            cursor.execute("""
+            INSERT INTO news (description, url, title, image_url)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (title) DO NOTHING
+            """,
+            (rappler_news[0]["response"], rappler_news[1], rappler_news[2].strip(), rappler_news[3])
+        )
             conn.commit()
 
         return jsonify({"message": "news added successfully"}), 201
@@ -259,7 +272,7 @@ def get_news():
 
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT id, description, url,title,image_url FROM news ORDER BY created_at DESC LIMIT 3;")
+            cursor.execute("SELECT id, description, url,title,image_url FROM news ORDER BY created_at DESC LIMIT 5;")
             rows = cursor.fetchall()
             news = [
                 {"id": row[0], "description": row[1],"url": row[2],"title":row[3],"image_url":row[4]} for row in rows

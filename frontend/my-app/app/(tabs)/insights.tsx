@@ -6,9 +6,10 @@ import {
     ScrollView,
     Linking,
     TouchableOpacity,
+    RefreshControl,
     Image,
 } from "react-native";
-import { get } from "react-native/Libraries/TurboModule/TurboModuleRegistry";
+
 type NewsItem = {
     id: number;
     title: string;
@@ -19,6 +20,7 @@ type NewsItem = {
 
 export default function IndexScreen() {
     const [news, setNews] = React.useState<NewsItem[]>([]);
+    const [refreshing, setRefreshing] = React.useState(false);
 
     //const host =  "https://apac-app-562528254517.asia-southeast1.run.app";
     const host = "http://192.168.1.12:5000";
@@ -35,23 +37,32 @@ export default function IndexScreen() {
     React.useEffect(() => {
         getNews();
     }, []);
-    const imgUrl =
-        "https://www.da.gov.ph/wp-content/uploads/2025/05/p20-rice-rollout_11-2048x1326.jpg";
-
+    
+    const onRefresh = React.useCallback(async () => {
+        setRefreshing(true);
+        await getNews();
+        setRefreshing(false);
+    }, []);
     return (
-        <ScrollView style={styles.container}>
+       <ScrollView
+            style={styles.container}
+            refreshControl={
+                <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    colors={["green"]}
+                />
+            }
+        >
             <Text style={styles.title}>News AI Summary Analysis</Text>
-            {news.map((item, index) => (
-                <View key={index} style={styles.newsBlock}>
+            {news.map((item) => (
+                <View key={item.id} style={styles.newsBlock}>
                     <Text style={styles.newsTitle}>{item.title}</Text>
-                    {/* <Image source={{ uri: item.image }} style={{ width: 200, height: 200, borderRadius: 10 }} /> */}
-                    {/* <Text style={styles.newsText}>{item.image}</Text> */}
                     <Text style={styles.newsText}>{item.description}</Text>
                     <Image
                         source={{ uri: item.image_url }}
                         style={{ height: 200, borderRadius: 10 }}
                     />
-
                     <TouchableOpacity
                         style={styles.newsUrlButton}
                         onPress={() => Linking.openURL(item.url)}
@@ -83,7 +94,7 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     newsTitle: {
-        fontSize: 16,
+        fontSize: 20,
         color: "green", // White text for contrast
         marginBottom: 5,
 
