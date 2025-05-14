@@ -154,64 +154,6 @@ def home():
 
 #DATABASE
 
-@app.route("/add_plant", methods=["POST"])
-def add_plant():
-    """API endpoint to add a plant to the database."""
-    data = request.get_json()
-    plant_name = data.get("name")
-    description = data.get("description")
-
-    if not plant_name:
-        return jsonify({"error": "Plant name is required"}), 400
-
-    conn = get_db_connection()
-    if conn is None:
-        return jsonify({"error": "Failed to connect to the database"}), 500
-
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute("""CREATE TABLE news (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    description TEXT
-);""")
-            cursor.execute(
-                "INSERT INTO plants (name, description) VALUES (%s, %s)",
-                (plant_name, description),
-            )
-            conn.commit()
-        return jsonify({"message": "Plant added successfully"}), 201
-    except Exception as e:
-        print(f"Error inserting plant: {e}")
-        return jsonify({"error": f"An error occurred: {e}"}), 500
-    finally:
-        conn.close()
-
-
-@app.route("/get_plants", methods=["GET"])
-def get_plants():
-    """API endpoint to retrieve all plants from the database."""
-    conn = get_db_connection()
-    if conn is None:
-        return jsonify({"error": "Failed to connect to the database"}), 500
-
-    try:
-        with conn.cursor() as cursor:
-           
-            cursor.execute("SELECT id, name, description FROM plants")
-            rows = cursor.fetchall()
-            plants = [
-                {"id": row[0], "name": row[1], "description": row[2]} for row in rows
-            ]
-        return jsonify(plants), 200
-    except Exception as e:
-        print(f"Error retrieving plants: {e}")
-        return jsonify({"error": f"An error occurred: {e}"}), 500
-    finally:
-        conn.close()
-
-
-
 """
 
 gcloud scheduler jobs create http daily-flask-task \
@@ -235,8 +177,8 @@ def daily_news():
 
     try:
         with conn.cursor() as cursor:
-            #cursor.execute(""" ALTER TABLE news ADD COLUMN image_url TEXT ;""")
-            #cursor.execute("DELETE FROM news;")
+            #cursor.execute(""" \d+ tablename""")
+            
             cursor.execute("""
                                 INSERT INTO news (description, url, title, image_url)
                                 VALUES (%s, %s, %s, %s)
@@ -261,7 +203,122 @@ def daily_news():
         conn.close()
        
     
-    return 'Daily task executed', 200
+        return 'Daily task executed', 200
+    
+    """
+    CREATE TABLE IF NOT EXISTS weekly_suggestions (
+    id SERIAL PRIMARY KEY,            
+    suggestion TEXT NOT NULL,          
+    created_at TIMESTAMP DEFAULT NOW(),
+);
+    """
+@app.route("/weekly_suggestions", methods=['POST'])
+def weekly_suggestions():
+    """API endpoint to generate weekly suggestions."""
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        # 1) Fetch latest 10 logs
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT plant, log_date, watered, fertilizer_applied,
+                       disease, height_cm, growth_stage, note
+                FROM plant_log
+                ORDER BY log_date DESC
+                LIMIT 10
+            """)
+            rows = cursor.fetchall()
+
+        if not rows:
+            return jsonify({"error": "No logs available to generate suggestions"}), 404
+
+        logs = [
+            {
+                "plant": r[0],
+                "log_date": r[1].isoformat() if hasattr(r[1], "isoformat") else str(r[1]),
+                "watered": r[2],
+                "fertilizer_applied": r[3],
+                "disease": r[4],
+                "height_cm": float(r[5]) if r[5] is not None else None,
+                "growth_stage": r[6],
+                "note": r[7],
+            }
+            for r in rows
+        ]
+
+        # 2) Build prompt
+        prompt = (
+            f"""
+            you are a plant expert and given this data below, what suggestions can you give to optimize plant growth, only put the action steps and skip the explanations, limit to 10 words per sentence, use bullet points, and do not add necessary sentences like "Here is a step-by-step plan to optimize growth"
+            f"{json.dumps(logs, indent=2)}\n"
+            """
+           
+        )
+
+        # 3) Call Gemini API
+        try:
+            model = genai.GenerativeModel('gemini-2.5-pro-preview-05-06')
+            response = model.generate_content([prompt])
+            suggestion_text = response.text.strip()
+        except Exception as api_err:
+            return jsonify({
+                "error": "Failed to generate suggestions from Gemini API",
+                "details": str(api_err)
+            }), 502
+
+        # 4) Store suggestion
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO weekly_suggestions (suggestion)
+                    VALUES (%s)
+                """, (suggestion_text,))
+            conn.commit()
+        except Exception as db_err:
+            return jsonify({
+                "error": "Failed to store weekly suggestion",
+                "details": str(db_err)
+            }), 500
+
+        return jsonify({"suggestion": suggestion_text}), 201
+
+    except Exception as unexpected:
+        return jsonify({
+            "error": "An unexpected error occurred",
+            "details": str(unexpected)
+        }), 500
+
+    finally:
+        conn.close()
+
+
+
+@app.route("/get_weekly_suggestion", methods=['GET'])
+def get_weekly_suggestions():
+    """API endpoint to retrieve all weekly suggestions from the database."""
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT id, suggestion FROM weekly_suggestions ORDER BY created_at DESC LIMIT 1;")
+            row = cursor.fetchone()
+            suggestions = {"id": row[0], "suggestion": row[1]} if row else None
+            print("suggestions", suggestions)
+        if not suggestions:
+            return jsonify({"message": "No suggestions available"}), 404
+        return jsonify(suggestions), 200
+    except Exception as e:
+        print(f"Error retrieving suggestions: {e}")
+        return jsonify({"error": f"An error occurred: {e}"}), 500
+    finally:
+        conn.close()
+
+
+
 
 @app.route("/get_news", methods=['GET'])
 def get_news():
@@ -272,6 +329,7 @@ def get_news():
 
     try:
         with conn.cursor() as cursor:
+          
             cursor.execute("SELECT id, description, url,title,image_url FROM news ORDER BY created_at DESC LIMIT 5;")
             rows = cursor.fetchall()
             news = [
@@ -279,7 +337,140 @@ def get_news():
             ]
         return jsonify(news), 200
     except Exception as e:
-        print(f"Error retrieving news: {e}")
+        print(f"Error retrieving plan: {e}")
+        return jsonify({"error": f"An error occurred: {e}"}), 500
+    finally:
+        conn.close()
+@app.route("/post_logs", methods=['POST'])
+def post_logs():
+    """API endpoint to add logs to the database."""
+    data = request.get_json()
+    fertilizer_applied = data.get("fertilizer")
+    plant = data.get("plant")
+    watered = data.get("watered")
+    height_cm= data.get("height")
+    disease = data.get("disease")
+    growth_stage = data.get("stage")
+    note = data.get("note")
+    print("Received plant:", plant)
+    print("Received fertilizer:", fertilizer_applied)
+    print("Received watered:", watered)
+    print("Received height:", height_cm)
+    print("Received disease:", disease)
+    print("Received growth stage:", growth_stage)
+    print("Received note:", note)
+    # Validate input data
+
+    if not plant:
+        return jsonify({"error": "Plant name is required"}), 400
+
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with conn.cursor() as cursor:
+            #ursor.execute("ALTER TABLE plant_log ADD COLUMN note TEXT;")
+            cursor.execute("""
+    CREATE TABLE IF NOT EXISTS plant_log ( 
+        id SERIAL PRIMARY KEY, 
+        plant TEXT,
+        log_date TIMESTAMP DEFAULT NOW(), 
+        watered BOOLEAN DEFAULT FALSE, 
+        fertilizer_applied TEXT, 
+        disease TEXT,
+        height_cm NUMERIC(5,2), 
+        growth_stage TEXT
+    );
+""")
+            
+            cursor.execute("""
+                INSERT INTO plant_log (plant, watered, fertilizer_applied, height_cm, disease, growth_stage,note)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, (plant, watered, fertilizer_applied, height_cm, disease, growth_stage, note))
+            
+            
+            conn.commit()
+        return jsonify({"message": "Logs added successfully"}), 201
+    except Exception as e:
+        print(f"Error inserting logs: {e}")
+        return jsonify({"error": f"An error occurred: {e}"}), 500
+    finally:
+        conn.close()
+
+@app.route("/get_logs", methods=['GET'])
+def get_logs():
+    """API endpoint to retrieve all logs from the database."""
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with conn.cursor() as cursor:
+          
+            cursor.execute(
+                    "SELECT id, plant, log_date, watered, fertilizer_applied, disease, height_cm, growth_stage, note"
+                    " FROM plant_log ORDER BY log_date DESC LIMIT 10;"
+                )
+            rows = cursor.fetchall()
+            logs = [
+                {"id": row[0], "plant": row[1], "log_date": row[2], "watered": row[3], "fertilizer_applied": row[4], "disease": row[5], "height_cm": row[6], "growth_stage": row[7],"note": row[8]} for row in rows
+            ]
+            print(logs)
+        return jsonify(logs), 200
+    except Exception as e:
+        print(f"Error retrieving logs: {e}")
+        return jsonify({"error": f"An error occurred: {e}"}), 500
+    finally:
+        conn.close()
+@app.route("/add_plant", methods=["POST"])
+def add_plant():
+    """API endpoint to add a plant to the database."""
+    data = request.get_json()
+    plant_name = data.get("name")
+    
+
+    if not plant_name:
+        return jsonify({"error": "Plant name is required"}), 400
+
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with conn.cursor() as cursor:
+            
+            cursor.execute("""
+                 
+            """)
+            cursor.execute(
+                "INSERT INTO plants (name) VALUES (%s)",
+                (plant_name,)
+            )
+            conn.commit()
+        return jsonify({"message": "Plant added successfully"}), 201
+    except Exception as e:
+        print(f"Error inserting plant: {e}")
+        return jsonify({"error": f"An error occurred: {e}"}), 500
+    finally:
+        conn.close()
+@app.route("/get_plant", methods=["GET"])
+def get_plant():
+    """API endpoint to retrieve all plants from the database."""
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT id, name FROM plants")
+            rows = cursor.fetchall()
+            plants = [
+                {"id": row[0], "name": row[1]} for row in rows
+            ]
+        return jsonify(plants), 200
+    except Exception as e:
+        print(f"Error retrieving plants: {e}")
         return jsonify({"error": f"An error occurred: {e}"}), 500
     finally:
         conn.close()

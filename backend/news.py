@@ -24,8 +24,8 @@ def generate_insights_from_text(text):
 2.  **Farming Practices:** Does the news suggest any need to adapt cultivation methods, technology use, or resource management?
 3.  **Market Implications:** How might this news affect crop prices, demand, or input costs?
 4.  **Actionable Information:** What is the most crucial takeaway a farmer could act upon or needs to monitor?
-
-**Output:** Synthesize your findings into a concise paragraph (4-5 sentences) summarizing the most critical points for a farmer reading this news.
+dont add stuffs like this ""Here's an agricultural advisor's assessment of the news article:"
+**Output:** Synthesize your findings into a concise paragraph (20 words) summarizing the most critical points for a farmer reading this news.
 """
     contents = text_prompt
     try:
@@ -64,7 +64,7 @@ def da_news_scraper():
 #https://www.rappler.com/topic/agriculture-philippines/
 #https://www.rappler.com/topic/agriculture-philippines/page/2/
 def rappler_news_scraper():
-    url = "https://www.rappler.com/topic/agriculture-philippines/page/2/"
+    url = "https://www.rappler.com/topic/agriculture-philippines/page/3/"
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.content, 'html.parser')
     figure = soup.find('figure', class_='archive-article-image')
@@ -89,9 +89,29 @@ def rappler_news_scraper():
                 # Join all paragraphs into a single string if needed
                 full_text = "\n".join(texts)
                 res = generate_insights_from_text(full_text)
-                print(res)
-                print(title)
+                print("THIS CAME FROM GEMINI",res)
+                #print(title)
                 return [res,link,title,image_url]  # or return both link and image_url as needed
+#https://www.da.gov.ph/aggie-trends/
+def da_aggie_trends_scraper():
+    url = "https://www.da.gov.ph/aggie-trends/"
+    pdf_url= "https://drive.google.com/file/d/1REUw0nrYgpQbACezcYUkbrdQnUJzsOqq/view"
+
+    response = requests.get(pdf_url, headers=headers)
+    soup = BeautifulSoup(response.content, 'html.parser')
+    print(soup)
+def check(): #https://www.da.gov.ph/ship-with-35000-bags-of-well-milled-nfa-rice-arrives-in-cebu/
+    model = genai.GenerativeModel('gemini-2.5-pro-preview-05-06')
+    text_prompt = f"""give me summary of this link  https://www.da.gov.ph/ship-with-35000-bags-of-well-milled-nfa-rice-arrives-in-cebu/ """
+    contents = text_prompt
+    try:
+        response = model.generate_content(contents)
+        result = {"response": response.text}
+        print(result)
+    except Exception as e:
+        return {"error": f"An API error occurred: {e}"}
+    
 if __name__ == "__main__":
     rappler_news_scraper()
-
+    #da_aggie_trends_scraper()
+    #check()

@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 export default function Layout() {
   return (
     <Tabs
@@ -15,7 +15,7 @@ export default function Layout() {
        <Tabs.Screen
         name="cam"
         options={{
-          tabBarLabel: 'Camera',
+          tabBarLabel: '',
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="camera-alt" color={color} size={size} />
           ),
@@ -24,7 +24,7 @@ export default function Layout() {
       <Tabs.Screen
         name="index"
         options={{
-          tabBarLabel: 'Home',
+          tabBarLabel: '',
          
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="home" color={color} size={size} />
@@ -36,12 +36,25 @@ export default function Layout() {
      <Tabs.Screen
         name="insights"
         options={{
-          tabBarLabel: 'Insights',
+          tabBarLabel: '',
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="insights" color={color} size={size} />
           ),
         }}
       />
+      {/*  <Tabs.Screen
+        name="logs"
+        options={{
+          tabBarLabel: '',
+          tabBarIcon: ({ color, size }) => (
+           
+            <MaterialCommunityIcons name="pencil" size={24} color={color} />
+          ),
+        }}
+      />*/}
+      
+   
     </Tabs>
+    
   );
 }

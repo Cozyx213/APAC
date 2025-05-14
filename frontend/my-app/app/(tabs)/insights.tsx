@@ -23,7 +23,7 @@ export default function IndexScreen() {
     const [refreshing, setRefreshing] = React.useState(false);
 
     //const host =  "https://apac-app-562528254517.asia-southeast1.run.app";
-    const host = "http://192.168.1.12:5000";
+    const host = "http://192.168.1.5:5000";
     const getNews = async () => {
         try {
             const response = await fetch(`${host}/get_news`);
@@ -37,14 +37,19 @@ export default function IndexScreen() {
     React.useEffect(() => {
         getNews();
     }, []);
-    
+
     const onRefresh = React.useCallback(async () => {
         setRefreshing(true);
         await getNews();
         setRefreshing(false);
     }, []);
-    return (
-       <ScrollView
+    return (<><View style={styles.header}>
+                <Image
+                    source={require("../../assets/images/logo.png")}
+                    style={styles.logo}
+                />
+            </View>
+        <ScrollView
             style={styles.container}
             refreshControl={
                 <RefreshControl
@@ -54,6 +59,8 @@ export default function IndexScreen() {
                 />
             }
         >
+            {" "}
+            
             <Text style={styles.title}>News AI Summary Analysis</Text>
             {news.map((item) => (
                 <View key={item.id} style={styles.newsBlock}>
@@ -71,7 +78,7 @@ export default function IndexScreen() {
                     </TouchableOpacity>
                 </View>
             ))}
-        </ScrollView>
+        </ScrollView></>
     );
 }
 
@@ -103,7 +110,6 @@ const styles = StyleSheet.create({
     newsText: {
         fontSize: 16,
         color: "green", // White text for contrast
-       
     },
     readMore: {
         fontSize: 14,
@@ -115,5 +121,17 @@ const styles = StyleSheet.create({
         margin: 10,
         borderRadius: 8,
         alignItems: "center",
+    },
+    header: {
+        backgroundColor: "#65B04A",
+        padding: 20,
+        borderBottomLeftRadius: 20,
+        borderBottomRightRadius: 20,
+        alignItems: "center",
+    },
+    logo: {
+        width: 120,
+        height: 40,
+        resizeMode: "contain",
     },
 });

@@ -1,4 +1,4 @@
-import { CameraView, useCameraPermissions, Camera } from "expo-camera";
+import { CameraView, useCameraPermissions , Camera} from "expo-camera";
 import { useRef, useState } from "react";
 import { useIsFocused } from "@react-navigation/native";
 import {
@@ -30,6 +30,7 @@ export default function App() {
     const [result, setResult] = useState<any>(null);
     const [photoUri, setPhotoUri] = useState<string | null>(null);
     const isFocused = useIsFocused();
+    
     if (!permission) {
         // Camera permissions are still loading.
         return <View />;
@@ -76,7 +77,7 @@ export default function App() {
 
                 // Use appropriate host for emulator vs real device
                 //const host = "https://apac-app-562528254517.asia-southeast1.run.app";
-                const host = "http://192.168.1.12:5000";
+                const host = "http://192.168.1.5:5000";
                 // Send request using fetch (better file upload support in React Native)
 
                 try {
@@ -152,8 +153,8 @@ export default function App() {
         <View style={styles.container}>
             {!result && isFocused && !photoUri && (
                 <>
-                    <CameraView style={styles.camera} ref={cameraRef} />
-
+                    <CameraView style={styles.camera} ref={cameraRef} enableTorch />
+                    
                     <View style={styles.topBar}>
                         <TextInput
                             style={styles.input}
