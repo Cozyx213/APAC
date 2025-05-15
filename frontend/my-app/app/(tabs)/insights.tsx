@@ -22,8 +22,8 @@ export default function IndexScreen() {
     const [news, setNews] = React.useState<NewsItem[]>([]);
     const [refreshing, setRefreshing] = React.useState(false);
 
-    //const host =  "https://apac-app-562528254517.asia-southeast1.run.app";
-    const host = "http://192.168.1.5:5000";
+    const host =  "https://apac-app-562528254517.asia-southeast1.run.app";
+    //const host = "http://192.168.1.5:5000";
     const getNews = async () => {
         try {
             const response = await fetch(`${host}/get_news`);
@@ -59,8 +59,7 @@ export default function IndexScreen() {
                 />
             }
         >
-            {" "}
-            
+          
             <Text style={styles.title}>News AI Summary Analysis</Text>
             {news.map((item) => (
                 <View key={item.id} style={styles.newsBlock}>

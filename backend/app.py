@@ -212,7 +212,7 @@ def daily_news():
     created_at TIMESTAMP DEFAULT NOW(),
 );
     """
-@app.route("/weekly_suggestions", methods=['POST'])
+@app.route("/weekly_suggestions", methods=['GET'])
 def weekly_suggestions():
     """API endpoint to generate weekly suggestions."""
     conn = get_db_connection()
@@ -330,7 +330,7 @@ def get_news():
     try:
         with conn.cursor() as cursor:
           
-            cursor.execute("SELECT id, description, url,title,image_url FROM news ORDER BY created_at DESC LIMIT 5;")
+            cursor.execute("SELECT id, description, url,title,image_url FROM news ORDER BY created_at DESC LIMIT 20;")
             rows = cursor.fetchall()
             news = [
                 {"id": row[0], "description": row[1],"url": row[2],"title":row[3],"image_url":row[4]} for row in rows
@@ -387,7 +387,7 @@ def post_logs():
             cursor.execute("""
                 INSERT INTO plant_log (plant, watered, fertilizer_applied, height_cm, disease, growth_stage,note)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, (plant, watered, fertilizer_applied, height_cm, disease, growth_stage, note))
+            """, (plant, watered, fertilizer_applied, height_cm, disease, growth_stage, note.strip()))
             
             
             conn.commit()
@@ -454,6 +454,8 @@ def add_plant():
         return jsonify({"error": f"An error occurred: {e}"}), 500
     finally:
         conn.close()
+
+
 @app.route("/get_plant", methods=["GET"])
 def get_plant():
     """API endpoint to retrieve all plants from the database."""
@@ -471,6 +473,135 @@ def get_plant():
         return jsonify(plants), 200
     except Exception as e:
         print(f"Error retrieving plants: {e}")
+        return jsonify({"error": f"An error occurred: {e}"}), 500
+    finally:
+        conn.close()
+
+def generate_demand():
+    text_prompt = (
+        "Based on this news report, give me list of crops that have a chance of "
+        "increasing in price, decreasing price, and only send json, do not include "
+        "any introduction for the response, do not put neutral crops, also, every "
+        "crop must have estimated price in pesos with float data type and an analysis "
+        "why the sentiment is such; name the key for price 'price' and the key for "
+        "analysis 'analysis'; the key for increasing prices must be 'increasing' and "
+        "the key for decreasing prices must be 'decreasing' while the crop name is in "
+        "the key 'crop'. Furthermore, do not put the predicted price, instead, put "
+        "the current price but for the price do not be limited by the data I gave. "
+        "Lastly, do not put the news ID where the sentiment came from."
+    )
+    res = requests.get("https://apac-app-562528254517.asia-southeast1.run.app/get_news")
+    if res.ok and res.text:
+        try:
+            result = res.json()
+        except json.JSONDecodeError:
+            result = {"error": "Invalid JSON from news endpoint"}
+    else:
+        model = genai.GenerativeModel('gemini-2.5-pro-preview-05-06')
+        response = model.generate_content([text_prompt])
+        text = response.text.replace("```json", "").replace("```", "").strip()
+        result = {"response": text}
+        with open('temp.json', 'w') as f:
+            json.dump(result, f, indent=1)
+    return result
+
+
+def generate_demand_final():
+    text_prompt = (
+        "Based on this news report, give me list of crops that have a chance of "
+        "increasing in price, decreasing price, and only send json, do not include "
+        "any introduction for the response, do not put neutral crops, also, every "
+        "crop must have estimated price in pesos with float data type and an analysis "
+        "why the sentiment is such; name the key for price 'price' and the key for "
+        "analysis 'analysis'; the key for increasing prices must be 'increasing' and "
+        "the key for decreasing prices must be 'decreasing' while the crop name is in "
+        "the key 'crop'. Furthermore, do not put the predicted price, instead, put "
+        "the current price but for the price do not be limited by the data I gave. "
+        "Lastly, do not put the news ID where the sentiment came from."
+    )
+    url = "http://127.0.0.1:5000/get_news"  # Correctly define the URL for fetching news
+
+    try:
+        # Fetch the latest 20 news articles
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an error for HTTP issues
+        news_data = response.json()
+
+        if not news_data or not isinstance(news_data, list):
+            raise ValueError("Invalid news data received from the API")
+
+        # Append the news data to the prompt
+        text_prompt += "\n" + json.dumps(news_data, indent=2)
+
+        # Call the Gemini API to generate demand
+        model = genai.GenerativeModel('gemini-2.5-pro-preview-05-06')
+        contents = [text_prompt]
+        response = model.generate_content(contents)
+
+        # Clean up the response text
+        temp = response.text
+        cleaned_response = temp.replace("```json", "").replace("```", "").strip()
+
+        # Return the cleaned response as a dictionary
+        result = {"response": cleaned_response}
+        return result
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching news: {e}")
+        return None
+    except Exception as e:
+        print(f"Error generating demand: {e}")
+        return None
+@app.route("/post_demand", methods=["POST"])
+def post_demand():
+    """API endpoint to add demand to the database."""
+    demand = generate_demand_final()
+
+    if not demand or "response" not in demand:
+        return jsonify({"error": "Failed to generate demand"}), 500
+
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with conn.cursor() as cursor:
+            # Create the demand table if it doesn't exist
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS demand ( 
+                    id SERIAL PRIMARY KEY, 
+                    json TEXT
+                );
+            """)
+            # Insert the generated demand into the database
+            cursor.execute(
+                "INSERT INTO demand (json) VALUES (%s)",
+                (json.dumps(demand),)
+            )
+            conn.commit()
+        return jsonify({"message": "Demand added successfully"}), 201
+    except Exception as e:
+        print(f"Error inserting demand: {e}")
+        return jsonify({"error": f"An error occurred: {e}"}), 500
+    finally:
+        conn.close()
+@app.route("/get_demand", methods=["GET"])
+def get_demand():
+    """API endpoint to retrieve the latest demand from the database."""
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT id, json FROM demand ORDER BY id DESC LIMIT 1;")
+            row = cursor.fetchone()
+            if not row:
+                return jsonify({"message": "No demand available"}), 404
+            demand = {"id": row[0], "json": row[1]}
+        return jsonify(demand), 200
+    except Exception as e:
+        print(f"Error retrieving demand: {e}")
         return jsonify({"error": f"An error occurred: {e}"}), 500
     finally:
         conn.close()

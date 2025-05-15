@@ -52,7 +52,7 @@ def da_news_scraper():
    
        
 
-    link = post_details[5].get('href')
+    link = post_details[3].get('href')
     response2 = requests.get(link, headers=headers)
     soup2 = BeautifulSoup(response2.content, 'html.parser')
     article = soup2.find('article')
@@ -63,8 +63,9 @@ def da_news_scraper():
 
 #https://www.rappler.com/topic/agriculture-philippines/
 #https://www.rappler.com/topic/agriculture-philippines/page/2/
+
 def rappler_news_scraper():
-    url = "https://www.rappler.com/topic/agriculture-philippines/page/3/"
+    url = "https://www.rappler.com/topic/agriculture-philippines/page/7/"
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.content, 'html.parser')
     figure = soup.find('figure', class_='archive-article-image')

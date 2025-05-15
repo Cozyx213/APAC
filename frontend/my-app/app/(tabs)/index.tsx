@@ -13,6 +13,7 @@ import {
     KeyboardAvoidingView,
     TouchableWithoutFeedback,
     Keyboard,
+    RefreshControl,
 } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -97,7 +98,6 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
 export default function HomeScreen() {
     const [modalVisible, setModalVisible] = useState(false);
 
-    const [cropModalVisible, setCropModalVisible] = useState(false);
     const [selectedCrop, setSelectedCrop] = useState<string | null>(null);
     // State for fetching logs
     const [plantLogs, setPlantLogs] = useState<logItem[]>([]);
@@ -116,6 +116,12 @@ export default function HomeScreen() {
     const [isExpanded, setIsExpanded] = useState(false); // State to track text expansion
     const [suggestion, setSuggestion] = useState("");
 
+    const [refreshing, setRefreshing] = React.useState(false);
+    const onRefresh = React.useCallback(async () => {
+        setRefreshing(true);
+        await getSuggestion();
+        setRefreshing(false);
+    }, []);
     const growthStages = [
         "Sprout",
         "Seedling",
@@ -123,13 +129,12 @@ export default function HomeScreen() {
         "Budding",
         "Flowering",
     ];
-
+    const host = "https://apac-app-562528254517.asia-southeast1.run.app";
+    const host2 = "http://192.168.1.5:5000"
     //display logs
     const getSuggestion = async () => {
         try {
-            const response = await fetch(
-                `http://192.168.1.5:5000/get_weekly_suggestion`
-            );
+            const response = await fetch(`${host2}/get_weekly_suggestion`);
             const data = await response.json();
             console.log("Fetched suggestion:", data);
             setSuggestion(data.suggestion);
@@ -141,10 +146,7 @@ export default function HomeScreen() {
     const renderLogs = async () => {
         setLogsLoading(true);
         try {
-            const res = await fetch(
-                `http://192.168.1.5:5000/get_logs?
-                )}`
-            );
+            const res = await fetch(`${host}/get_logs`);
             const data = await res.json();
             console.log("Fetched logs:", data);
             setPlantLogs(data);
@@ -173,7 +175,7 @@ export default function HomeScreen() {
         };
 
         try {
-            const response = await fetch("http://192.168.1.5:5000/post_logs", {
+            const response = await fetch(`${host}/post_logs`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -186,6 +188,7 @@ export default function HomeScreen() {
                 Alert.alert("Success", "Log added successfully!");
                 setModalVisible(false);
                 renderLogs(); // Refresh logs after saving
+                getSuggestion(); // Refresh weekly recommendation
             } else {
                 Alert.alert("Error", result.error || "Failed to save log.");
             }
@@ -193,11 +196,10 @@ export default function HomeScreen() {
             Alert.alert("Error", "An error occurred while saving the log.");
             console.error(error);
         }
+        fetch(`${host2}/weekly_suggestions`)
     };
 
     // Fetch logs when a crop is selected and the modal opens
-
-    
 
     const toggleActivity = (activity: keyof typeof activities) => {
         setActivities((prev) => ({
@@ -208,9 +210,19 @@ export default function HomeScreen() {
 
     return (
         // Parent View to contain both the ScrollView and the absolute button
+
         <View style={styles.screenContainer}>
             {/* The ScrollView now fills the available space */}
-            <ScrollView style={styles.scrollViewContent}>
+            <ScrollView
+                style={styles.scrollViewContent}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={["green"]}
+                    />
+                }
+            >
                 {/* Header */}
                 <View style={styles.header}>
                     <Image
@@ -228,7 +240,6 @@ export default function HomeScreen() {
                 {/* Stats Row */}
                 <View style={styles.statsRow}>
                     {/* Container for the Circular Progress and its label */}
-                    
 
                     {/* Text field with label and paragraph next to the stat */}
 
@@ -818,9 +829,10 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     logCard: {
-        borderRadius: 12,
+        borderRadius: 12,   
         overflow: "hidden",
         borderWidth: 1,
+        height: 150,
         borderColor: "#DDD",
         marginHorizontal: 20,
         backgroundColor: "#FFF",

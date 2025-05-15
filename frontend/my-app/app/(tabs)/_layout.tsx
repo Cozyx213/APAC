@@ -27,18 +27,28 @@ export default function Layout() {
           tabBarLabel: '',
          
           tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="home" color={color} size={size} />
+            <MaterialIcons name="create" color={color} size={size} />
           ),
         // Hide the tab bar for the home screen
         }}
       />
-     
+       <Tabs.Screen
+        name="demand"
+        options={{
+          tabBarLabel: '',
+         
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="insights" color={color} size={size} />
+          ),
+        // Hide the tab bar for the home screen
+        }}
+      />
      <Tabs.Screen
         name="insights"
         options={{
           tabBarLabel: '',
           tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="insights" color={color} size={size} />
+            <MaterialIcons name="newspaper" color={color} size={size} />
           ),
         }}
       />

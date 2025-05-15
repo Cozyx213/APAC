@@ -1,4 +1,4 @@
-import { CameraView, useCameraPermissions , Camera} from "expo-camera";
+import { CameraView, useCameraPermissions, Camera } from "expo-camera";
 import { useRef, useState } from "react";
 import { useIsFocused } from "@react-navigation/native";
 import {
@@ -11,10 +11,29 @@ import {
     ActivityIndicator,
     ScrollView,
     ImageBackground,
+    Alert,
 } from "react-native";
+import * as Clipboard from "expo-clipboard";
+import { MaterialIcons } from "@expo/vector-icons";
 
 // axios is unused when using fetch for file upload
 // import axios from "axios";
+async function fetchWithRetry(
+    input: RequestInfo,
+    init: RequestInit,
+    retries = 2
+) {
+    try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 60_000);
+        const res = await fetch(input, { ...init, signal: controller.signal });
+        clearTimeout(timeout);
+        return res;
+    } catch (err) {
+        if (retries > 0) return fetchWithRetry(input, init, retries - 1);
+        throw err;
+    }
+}
 
 export default function App() {
     const [permission, requestPermission] = useCameraPermissions();
@@ -30,7 +49,7 @@ export default function App() {
     const [result, setResult] = useState<any>(null);
     const [photoUri, setPhotoUri] = useState<string | null>(null);
     const isFocused = useIsFocused();
-    
+
     if (!permission) {
         // Camera permissions are still loading.
         return <View />;
@@ -76,12 +95,14 @@ export default function App() {
                 console.log("FormData parts", formData);
 
                 // Use appropriate host for emulator vs real device
-                //const host = "https://apac-app-562528254517.asia-southeast1.run.app";
-                const host = "http://192.168.1.5:5000";
+
+                const host =
+                    "https://apac-app-562528254517.asia-southeast1.run.app";
+                //const host = "http://192.168.1.5:5000";
                 // Send request using fetch (better file upload support in React Native)
 
                 try {
-                    const response = await fetch(`${host}/generate`, {
+                    const response = await fetchWithRetry(`${host}/generate`, {
                         method: "POST",
                         body: formData,
                     });
@@ -136,10 +157,21 @@ export default function App() {
                     setRiskLevel(payload.risk_level);
                     setFarmerActions(payload.farmer_actions);
                     console.log("Response:", payload);
-                } catch (error) {
-                    // Log the error and handle it gracefully
-                    console.error("Error occurred:", error);
-                    alert(`An error occurred: ${error}`);
+                } catch (err) {
+                    if (err instanceof Error) {
+                        alert(`Fetch failed: ${err.message}`);
+                        console.error(
+                            "Fetch failed:",
+                            err.name,
+                            err.message,
+                            err
+                        );
+                    } else {
+                        console.error(
+                            "Fetch failed with an unknown error:",
+                            err
+                        );
+                    }
                 }
             } catch (error) {
                 console.error("Error:", error);
@@ -153,8 +185,12 @@ export default function App() {
         <View style={styles.container}>
             {!result && isFocused && !photoUri && (
                 <>
-                    <CameraView style={styles.camera} ref={cameraRef} enableTorch />
-                    
+                    <CameraView
+                        style={styles.camera}
+                        ref={cameraRef}
+                        enableTorch
+                    />
+
                     <View style={styles.topBar}>
                         <TextInput
                             style={styles.input}
@@ -192,9 +228,32 @@ export default function App() {
                 >
                     <View style={styles.resultContainer}>
                         <ScrollView contentContainerStyle={{ padding: 10 }}>
-                            <Text style={styles.diseaseText}>
-                                Disease: {disease}
-                            </Text>
+                            <View
+                                style={{
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                }}
+                            >
+                                <Text style={styles.diseaseText}>
+                                    Disease: {disease}
+                                </Text>
+                                <TouchableOpacity
+                                    onPress={async () => {
+                                        await Clipboard.setStringAsync(disease);
+                                        Alert.alert(
+                                            "Copied",
+                                            "Disease copied to clipboard"
+                                        );
+                                    }}
+                                    style={{ marginLeft: 8 }}
+                                >
+                                    <MaterialIcons
+                                        name="content-copy"
+                                        size={20}
+                                        color="#fff"
+                                    />
+                                </TouchableOpacity>
+                            </View>
                             <Text
                                 style={[
                                     styles.riskText,
